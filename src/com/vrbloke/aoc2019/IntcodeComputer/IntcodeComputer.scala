@@ -31,19 +31,17 @@ class IntcodeComputer(val inputReader: java.util.Scanner) {
   private def parseParam(argno: Int): Int = readModes(checkMode(argno))(head+argno)
 
   def processOpcode(): Int = {
-    val h = head
-    println(s"Processing ${read(h)} head at $h")
-    read(h) % 100 match {
+    read(head) % 100 match {
       case 99 => return 99
       case 1 =>
-        set(read(h+3), parseParam(1) + parseParam(2))
+        set(read(head+3), parseParam(1) + parseParam(2))
         head += 4
       case 2 =>
-        set(read(h+3), parseParam(1) * parseParam(2))
+        set(read(head+3), parseParam(1) * parseParam(2))
         head += 4
       case 3 =>
         print("Provide input:")
-        set(read(h+1), scala.io.StdIn.readInt())
+        set(read(head+1), scala.io.StdIn.readInt())
         head += 2
       case 4 =>
         println(parseParam(1))
@@ -53,10 +51,10 @@ class IntcodeComputer(val inputReader: java.util.Scanner) {
       case 6 =>
         head = if(0 == parseParam(1)) parseParam(2) else head+3
       case 7 =>
-        set(read(h+3), if(parseParam(1) < parseParam(2)) 1 else 0)
+        set(read(head+3), if(parseParam(1) < parseParam(2)) 1 else 0)
         head += 4
       case 8 =>
-        set(read(h+3), if(parseParam(1) == parseParam(2)) 1 else 0)
+        set(read(head+3), if(parseParam(1) == parseParam(2)) 1 else 0)
         head += 4
       case _ => println("Incorrect opcode!!")
         return 99
