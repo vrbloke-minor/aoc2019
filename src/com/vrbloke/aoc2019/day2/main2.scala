@@ -2,6 +2,7 @@ package com.vrbloke.aoc2019.day2
 
 import java.util.Scanner
 import java.io.File
+import com.vrbloke.aoc2019.IntcodeComputer.IntcodeComputer
 
 object main2 extends App {
   val inputReader = new Scanner(new File("input/input.txt"))
