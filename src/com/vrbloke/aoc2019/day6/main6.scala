@@ -6,5 +6,5 @@ import java.io.File
 object main6 extends App {
   val mainDelegate = new UniversalOrbitMap(new Scanner(new File("input/input6.txt")))
   mainDelegate.printCOM()
-  println(mainDelegate.countOrbits())
+  println(mainDelegate.minimumTransfers())
 }

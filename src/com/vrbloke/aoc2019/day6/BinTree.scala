@@ -1,109 +1,106 @@
 package com.vrbloke.aoc2019.day6
 
-import scala.collection.mutable
-
-class BinTree[T](val data: T) {
-  var parent: BinTree[T] = null
-  var leftT: BinTree[T] = null
-  var rightT: BinTree[T] = null
+class BinTree[T]
+(val data: T, var parent: Option[BinTree[T]] = None,
+ var leftT: Option[BinTree[T]] = None, var rightT: Option[BinTree[T]] = None) {
 
   override def toString: String = data.toString
 
+  def isChildOf(other: BinTree[T]): Boolean = {
+    this == other.leftT.get || this == other.rightT.get
+  }
+
+  // Determine how many nodes exist above this node.
   def height(): Int = {
-    var currT = this
-    var h = -1
-    while(currT != null) {
-      h += 1
-      currT = currT.parent
+    var here = this
+    var height = 0
+    while (here.parent.nonEmpty) {
+      height += 1
+      here = here.parent.get
     }
-    h
+    height
+  }
+
+  def countConnections(): Int = {
+    var count = 0
+    var stack = List(this)
+    while (stack.nonEmpty) {
+      val here = stack.head
+      stack = stack.tail
+
+      count += here.height()
+      if (here.leftT.nonEmpty) stack = here.leftT.get :: stack
+      if (here.rightT.nonEmpty) stack = here.rightT.get :: stack
+    }
+    count
+  }
+
+  def traverseInorder(): Unit = {
+    var stack: List[BinTree[T]] = List()
+    var here = this
+    while (here != null || stack.nonEmpty) {
+      while (here != null) {
+        stack = here :: stack
+        here = here.leftT.orNull
+      }
+      here = stack.head
+      stack = stack.tail
+      println(here.data)
+      here = here.rightT.orNull
+    }
   }
 
   def addChild(newBT: BinTree[T]): Unit = {
-    if(leftT == null) {
-      leftT = newBT
-      leftT.addParent(this)
+    if (newBT.parent.nonEmpty) {
+      return
     }
-    else if(rightT == null) {
-      rightT = newBT
-      rightT.addParent(this)
+    (leftT, rightT) match {
+      case (None, _) => leftT = Some(newBT)
+      case (Some(_), None) => rightT = Some(newBT)
+      case _ =>
     }
+    newBT.setParent(this)
   }
+
   def addChild(newStr: T): Unit = {
     val newBT = new BinTree[T](newStr)
     addChild(newBT)
   }
 
-  def addParent(newBT: BinTree[T]): Unit = {
-    if(parent == null) {
-      parent = newBT
-      parent.addChild(this)
+  def setParent(newBT: BinTree[T]): Unit = {
+    if (isChildOf(newBT)) parent = Some(newBT)
+    else newBT.addChild(this)
+  }
+
+  def findNodeOfValue(valToFind: T): Option[BinTree[T]] = {
+    var stack = List(this)
+    while(stack.nonEmpty) {
+      val here = stack.head
+      stack = stack.tail
+
+      if(valToFind == here.data) return Some(here)
+      if(here.leftT.nonEmpty) stack = here.leftT.get :: stack
+      if(here.rightT.nonEmpty) stack = here.rightT.get :: stack
     }
-  }
-  def addParent(newStr: T): Unit = {
-    val newBT = new BinTree[T](newStr)
-    addParent(newBT)
-  }
-
-  def makeParentOf(otherBT: BinTree[T]): Unit = {
-    if(null == leftT) leftT = otherBT
-    else if(null == rightT) rightT = otherBT
-    else { return }
-    otherBT.parent = this
-  }
-  def makeChildOf(otherBT: BinTree[T]): Unit = otherBT.makeParentOf(this)
-
-  def traverseInorder(): Unit = {
-    def _traverseInorder(currT: BinTree[T]): Unit = {
-      if(currT.leftT != null) _traverseInorder(currT.leftT)
-      println(currT.data)
-      if(currT.rightT != null) _traverseInorder(currT.rightT)
-    }
-    _traverseInorder(this)
-  }
-
-  def findNodeOfValue(valToFind: T): BinTree[T] = {
-    var ref: BinTree[T] = null
-    @scala.annotation.tailrec
-     def _findNodeOfValue(valToFind: T, currT: BinTree[T]): Unit = {
-       if(currT.data == valToFind) ref = currT
-       else if(currT.leftT != null) { _findNodeOfValue(valToFind, currT.leftT) }
-       else if(currT.rightT != null) { _findNodeOfValue(valToFind, currT.rightT) }
-     }
-    _findNodeOfValue(valToFind, this)
-    ref
-  }
-
-  def countEdges(): Int = {
-    var count = 0
-    def _countEdges(currT: BinTree[T]): Unit = {
-      count += currT.height()
-      if(currT.leftT != null) _countEdges(currT.leftT)
-      if(currT.rightT != null) _countEdges(currT.rightT)
-    }
-    _countEdges(this)
-    count
+    None
   }
 }
 
 object BinTree {
-  @scala.annotation.tailrec
-  def findNodeOfValueInMany[T](xs: List[BinTree[T]], valToFind: T): BinTree[T]  = {
-    if(xs.isEmpty) null
-    else {
-      val found = xs.head.findNodeOfValue(valToFind)
-      if(found != null) found
-      else findNodeOfValueInMany[T](xs.tail, valToFind)
-    }
-  }
-
   def apply[T](data: T): BinTree[T] = new BinTree[T](data)
-
   def apply[T](data: T, dataL: T): BinTree[T] = {
     val newBT = new BinTree[T](data)
     newBT.addChild(dataL)
     newBT
   }
 
-  def unapply[T](tree: BinTree[T]): T,
+  def findCommonAncestor[T](t1: BinTree[T], t2: BinTree[T]): Option[BinTree[T]] = {
+    var here = t1
+    while(here != null) {
+      if(here.findNodeOfValue(t2.data).nonEmpty) return Some(here)
+      here = here.parent.orNull
+    }
+    None
+  }
 }
+
