@@ -53,7 +53,7 @@ class PasswordChecker(passwords: Seq[Int]) {
   @scala.annotation.tailrec
   private def checkPasswords(xs: Seq[Int], predicates: List[Int => Boolean]): Seq[Int] = {
     if(predicates.isEmpty) xs
-    else checkPasswords(xs.filter((x:Int) => predicates.head(x)), predicates.tail)
+    else checkPasswords(xs.filter(predicates.head(_)), predicates.tail)
   }
 
   private def solvePuzzle(predicates: List[Int => Boolean]): Int = checkPasswords(passwords, predicates).length
