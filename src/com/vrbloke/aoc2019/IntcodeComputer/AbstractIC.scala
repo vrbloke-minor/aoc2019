@@ -3,7 +3,7 @@ package com.vrbloke.aoc2019.IntcodeComputer
 import java.util.Scanner
 import scala.math.pow
 
-abstract class AbstractIntcodeComputer(val inputReader: java.util.Scanner) {
+abstract class AbstractIC(val inputReader: java.util.Scanner) {
   private val memory: Array[Int] = withAnnouncement("Dumping input"){
     inputReader.useDelimiter(",")
     readInput()
@@ -25,20 +25,36 @@ abstract class AbstractIntcodeComputer(val inputReader: java.util.Scanner) {
     }
   }
 
+  // Boolean checks
+  def hasHalted: Boolean = try { read(head) % 100 == 99 } catch { case e: java.lang.ArrayIndexOutOfBoundsException => true }
+  def notHalted: Boolean = !hasHalted
+  // Raw memory access
+  def opcodeAtHead: Int = read(head) % 100
   def stringMemory(): String = memory.mkString(",")
   def dumpMemory: Array[Int] = memory
+  // Reset methods
   def restoreMemory(): Unit = for(x <- memory.indices) {memory(x) = unmodifiedMemory(x)}
   def resetHead(): Unit = head = 0
+  def restoreInitialState(): Unit = {restoreMemory(); resetHead()}
+  // Methods for reading and writing to tape
   def read(position: Int): Int = memory(position)
   def set(position: Int, value: Int): Unit = { memory(position) = value }
+  // Helper methods for opcode processing
   private def readMode0(arg: Int): Int = read(read(arg))
   private def readMode1(arg: Int): Int = read(arg)
   private val readModes = List(readMode0 _, readMode1 _)
-  def inputFunc(): Int
-  def outputFunc(arg: Int): Unit
-  def inputMessage: String
   private def checkMode(argno: Int): Int = (read(head) / pow(10, 1+argno).toInt) % 10
   private def parseParam(argno: Int): Int = readModes(checkMode(argno))(head+argno)
+  // Abstract methods for input/output
+  def inputFunc(): Option[Int]
+  def outputFunc(arg: Int): Unit
+  def inputMessage: String
+  // Methods for running the code
+  def execute(): Unit = runCode()
+  @scala.annotation.tailrec
+  private def runCode(): Unit = {
+    if(processOpcode() != 99) runCode()
+  }
 
   def processOpcode(): Int = {
     read(head) % 100 match {
@@ -51,7 +67,9 @@ abstract class AbstractIntcodeComputer(val inputReader: java.util.Scanner) {
         head += 4
       case 3 =>
         print(inputMessage)
-        set(read(head+1), inputFunc())
+        val readInput = inputFunc()
+        if(readInput.isEmpty) return 99
+        set(read(head+1), readInput.get)
         head += 2
       case 4 =>
         outputFunc(parseParam(1))
@@ -69,30 +87,8 @@ abstract class AbstractIntcodeComputer(val inputReader: java.util.Scanner) {
       case _ => println("Incorrect opcode!!")
         return 99
     }
-    memory(head)
+    try { memory(head) } catch { case e: java.lang.ArrayIndexOutOfBoundsException => 99}
   }
 
-  @scala.annotation.tailrec
-  private def runCode(): Unit = {
-    if(processOpcode() != 99) runCode()
-  }
 
-  def solveForNounAndVerb(noun: Int, verb: Int): Int = {
-    withAnnouncement("Solving puzzle...") {
-      memory(1) = noun
-      memory(2) = verb
-      runCode()
-      memory(0)
-    }
-  }
-
-  def execute(): Unit = runCode()
-  def findOutputWithNounAndVerb(x: Int): (Int,Int) = {
-    for(i <- 0 to 99; j <- 0 to 99) {
-      val solver = new IntcodeComputer(new Scanner(memory.mkString(",")).useDelimiter(","))
-      if(solver.solveForNounAndVerb(i, j) == x) return (i,j)
-    }
-    println("Failure")
-    (-1,-1)
-  }
 }
